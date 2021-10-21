@@ -8,6 +8,7 @@ No libraries are required, everything is in a single standard C++17 include file
 
 ## Events
 
+ - timer
  - keyboard input
  - tcp connection request from tcp client
  - tcp connection accept from tcp server
@@ -24,6 +25,7 @@ No libraries are required, everything is in a single standard C++17 include file
 
 Code from demo application is in the `src` folder.  They can be built using the makefile in folder `build/vscode`
 
+ - `timertest.cpp` creates multiple timers that run concurrently
  - `cintest.cpp` demonstrates non-blocking keyboard input
  - `tcpserver.cpp` a simple TCP server that displays message received from a client
  - `tcpclient.cpp` a simple TCP client that sends message to a server as they are typed
