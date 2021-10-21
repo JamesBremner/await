@@ -1,6 +1,11 @@
+#include <time.h>
+#include <stdio.h>
+
 #include "await.h"
 
 raven::await::cAwait waiter;
+
+time_t start,end;
 
 void handler1()
 {
@@ -11,14 +16,19 @@ void handler1()
 }
 void handler2()
 {
-    std::cout << "***********timer2"<< std::endl;
+    time (&end);
+    double dif = difftime (end,start);
+    std::cout << "***********timer2 after "<< dif << std::endl;
 }
 void handler3()
 {
-    std::cout << "************timer3"<< std::endl;
+    time (&end);
+    double dif = difftime (end,start);
+    std::cout << "************timer3 after"<< dif << std::endl;
 }
 int main()
 {
+    time (&start);
     waiter.timer( 1000, handler1 );
     waiter.timer( 10000, handler2 );
     waiter.timer( 15000, handler3 );
