@@ -1,0 +1,93 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cin",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "command": "mingw32-make.exe",
+            "args": [
+                "-f",
+                "makefile",
+                "cin"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            } 
+        },
+        {
+            "label": "tcpserver",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "command": "mingw32-make.exe",
+            "args": [
+                "-f",
+                "makefile",
+                "server"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            } 
+        },
+        {
+            "label": "tcpclient",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "command": "mingw32-make.exe",
+            "args": [
+                "-f",
+                "makefile",
+                "client"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            } 
+        },
+        {
+            "label": "clean",
+            "command": "mingw32-make.exe",
+            "args": [
+                "clean"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": "build",
+            "problemMatcher": [
+                "$gcc"
+            ]
+        },
+        {
+			"label": "Build All",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"clean",
+				"cin",
+                "tcpserver",
+                "tcpclient",
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": []
+		}
+    ]
+}
