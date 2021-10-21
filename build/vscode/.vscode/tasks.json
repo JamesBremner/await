@@ -23,6 +23,25 @@
             } 
         },
         {
+            "label": "timer",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "command": "mingw32-make.exe",
+            "args": [
+                "-f",
+                "makefile",
+                "timer"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            } 
+        },
+        {
             "label": "tcpserver",
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -79,6 +98,7 @@
 			"dependsOrder": "sequence",
 			"dependsOn": [
 				"clean",
+                "timer",
 				"cin",
                 "tcpserver",
                 "tcpclient",

@@ -8,6 +8,7 @@
 #include <queue>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <chrono>
 
 namespace raven
 {
@@ -28,6 +29,19 @@ namespace raven
         public:
             cAwait() : myConnectSocket(INVALID_SOCKET)
             {
+            }
+
+            /** non blocking timer start
+             * @param[in] msecs timer delay
+             * @param[in] f the event handler ro run when timer delay ends
+             * 
+             * This can be called multiple times to create concurrent timers
+             */
+            void timer(
+                int msecs,
+                handler_t f)
+            {
+                new std::thread(timer_block, this, msecs, f);
             }
 
             /** non blocking wait for cin input
@@ -145,46 +159,54 @@ namespace raven
                     }
                     else
                     {
+                        // no event handlers waiting
 
-                        // yield to other threads if no event handlers waiting
-                        yield();
+                        // prevent access to queue by other threads
+                        std::lock_guard<std::mutex> lock(myMutex);
+
+                        // yield to other threads 
+                        std::this_thread::yield();
+
+                        // prevent CPU spinning madly, uselessly
+                        std::this_thread::sleep_for(
+                            std::chrono::milliseconds(10));
                     }
                 }
             }
 
-            /**  Stop the event handler running
+                /**  Stop the event handler running
 
     This should be called from an event handler
 
     */
 
-            void Stop()
-            {
-                myStopFlag = true;
-            }
+                void Stop()
+                {
+                    myStopFlag = true;
+                }
 
-        private:
-            bool myStopFlag;           ///< true if stop requested
-            handler_t myHandlerCopy;   ///< currently running event handler
-            std::queue<handler_t> myQ; ///< the queue of event handlers ready to run
-            std::mutex myMutex;        ///< prevents contention between threads trying to access the handler queue
+            private:
+                bool myStopFlag;           ///< true if stop requested
+                handler_t myHandlerCopy;   ///< currently running event handler
+                std::queue<handler_t> myQ; ///< the queue of event handlers ready to run
+                std::mutex myMutex;        ///< prevents contention between threads trying to access the handler queue
 
-            std::string mycinString;
+                std::string mycinString;
 
-            std::string myacceptPort;
-            SOCKET myAcceptSocket;  //< socket listening for clients
-            SOCKET myConnectSocket; //< socket connected to another tcp
-            std::string myRemoteAddress;
-            char myTCPbuf[1024];
-            std::string myServerIP;
-            std::string myServerPort;
+                std::string myacceptPort;
+                SOCKET myAcceptSocket;  //< socket listening for clients
+                SOCKET myConnectSocket; //< socket connected to another tcp
+                std::string myRemoteAddress;
+                char myTCPbuf[1024];
+                std::string myServerIP;
+                std::string myServerPort;
 
-            handler_t mycinHandler;
-            handler_t myacceptHandler;
-            handler_t myTCPreadHandler;
-            handler_t myTCPconnectHandler;
+                handler_t mycinHandler;
+                handler_t myacceptHandler;
+                handler_t myTCPreadHandler;
+                handler_t myTCPconnectHandler;
 
-            /** Post an event handler to be run as soon as possible
+                /** Post an event handler to be run as soon as possible
 
                 @param[in] f the event handler
 
@@ -194,13 +216,13 @@ namespace raven
     from the same thread as called by this function
 
     */
-            void post(handler_t f)
-            {
-                std::lock_guard<std::mutex> lock(myMutex);
-                myQ.push(f);
-            }
+                void post(handler_t f)
+                {
+                    std::lock_guard<std::mutex> lock(myMutex);
+                    myQ.push(f);
+                }
 
-            /**  get copy of next handler if one waiting
+                /**  get copy of next handler if one waiting
 
         @return true if event handler waiting
 
@@ -208,334 +230,192 @@ namespace raven
 
     */
 
-            bool get_next_handler()
-            {
-                // prevent access to queue by other threads
-                std::lock_guard<std::mutex> lock(myMutex);
-
-                // do nothing if no handler waiting
-                if (myQ.empty())
-                    return false;
-
-                // move handler from queue to attribute copy
-                myHandlerCopy = myQ.front();
-                myQ.pop();
-
-                return true;
-            }
-
-            /** yield to other threads if no event handlers waiting */
-            void yield()
-            {
-                // prevent access to queue by other threads
-                std::lock_guard<std::mutex> lock(myMutex);
-
-                // yield to other threads if no handlers waiting
-                if (myQ.empty())
-                    std::this_thread::sleep_for(
-                        std::chrono::milliseconds(1));
-            }
-
-            void cin_block()
-            {
-                std::cin >> mycinString;
-                post(mycinHandler);
-            }
-
-            // Initialize Winsock
-            void initWinSock()
-            {
-                WSADATA wsaData;
-                if (WSAStartup(MAKEWORD(2, 2), &wsaData))
+                bool get_next_handler()
                 {
-                    throw std::runtime_error("Winsock init failed");
-                }
-            }
+                    // prevent access to queue by other threads
+                    std::lock_guard<std::mutex> lock(myMutex);
 
-            void accept_block()
-            {
-                if (isTCPConnected())
-                {
-                    std::cout << "second connection rejected";
-                    return;
+                    // do nothing if no handler waiting
+                    if (myQ.empty())
+                        return false;
+
+                    // move handler from queue to attribute copy
+                    myHandlerCopy = myQ.front();
+                    myQ.pop();
+
+                    return true;
                 }
 
-                struct addrinfo *result = NULL,
-                                hints;
-
-                ZeroMemory(&hints, sizeof(hints));
-                hints.ai_family = AF_INET;
-                hints.ai_socktype = SOCK_STREAM;
-                hints.ai_protocol = IPPROTO_TCP;
-                hints.ai_flags = AI_PASSIVE;
-
-                int error = getaddrinfo(
-                    NULL, myacceptPort.c_str(),
-                    &hints, &result);
-                if (error)
+                void cin_block()
                 {
-                    throw std::runtime_error(
-                        "getaddrinfo failed " + std::to_string(error));
+                    std::cin >> mycinString;
+                    post(mycinHandler);
                 }
 
-                myAcceptSocket = ::socket(
-                    result->ai_family,
-                    result->ai_socktype,
-                    result->ai_protocol);
-                if (myAcceptSocket == INVALID_SOCKET)
+                // Initialize Winsock
+                void initWinSock()
                 {
-                    throw std::runtime_error("socket failed");
+                    WSADATA wsaData;
+                    if (WSAStartup(MAKEWORD(2, 2), &wsaData))
+                    {
+                        throw std::runtime_error("Winsock init failed");
+                    }
                 }
 
-                if (::bind(myAcceptSocket,
-                           result->ai_addr,
-                           (int)result->ai_addrlen) == SOCKET_ERROR)
+                void accept_block()
                 {
-                    closesocket(myAcceptSocket);
-                    myAcceptSocket = INVALID_SOCKET;
-                    throw std::runtime_error("bind failed");
-                }
+                    if (isTCPConnected())
+                    {
+                        std::cout << "second connection rejected";
+                        return;
+                    }
 
-                if (::listen(
+                    struct addrinfo *result = NULL,
+                                    hints;
+
+                    ZeroMemory(&hints, sizeof(hints));
+                    hints.ai_family = AF_INET;
+                    hints.ai_socktype = SOCK_STREAM;
+                    hints.ai_protocol = IPPROTO_TCP;
+                    hints.ai_flags = AI_PASSIVE;
+
+                    int error = getaddrinfo(
+                        NULL, myacceptPort.c_str(),
+                        &hints, &result);
+                    if (error)
+                    {
+                        throw std::runtime_error(
+                            "getaddrinfo failed " + std::to_string(error));
+                    }
+
+                    myAcceptSocket = ::socket(
+                        result->ai_family,
+                        result->ai_socktype,
+                        result->ai_protocol);
+                    if (myAcceptSocket == INVALID_SOCKET)
+                    {
+                        throw std::runtime_error("socket failed");
+                    }
+
+                    if (::bind(myAcceptSocket,
+                               result->ai_addr,
+                               (int)result->ai_addrlen) == SOCKET_ERROR)
+                    {
+                        closesocket(myAcceptSocket);
+                        myAcceptSocket = INVALID_SOCKET;
+                        throw std::runtime_error("bind failed");
+                    }
+
+                    if (::listen(
+                            myAcceptSocket,
+                            SOMAXCONN) == SOCKET_ERROR)
+                    {
+                        closesocket(myAcceptSocket);
+                        myAcceptSocket = INVALID_SOCKET;
+                        throw std::runtime_error("listen failed");
+                    }
+
+                    std::cout << "listening for client on port " << myacceptPort << "\n";
+
+                    struct sockaddr_in client_info;
+                    int size = sizeof(client_info);
+                    SOCKET s = ::accept(
                         myAcceptSocket,
-                        SOMAXCONN) == SOCKET_ERROR)
-                {
+                        (sockaddr *)&client_info,
+                        &size);
+                    if (s == INVALID_SOCKET)
+                    {
+                        std::cout << "invalid socket\n";
+                        return;
+                    }
+
+                    myConnectSocket = s;
+                    myRemoteAddress = inet_ntoa(client_info.sin_addr);
+
                     closesocket(myAcceptSocket);
-                    myAcceptSocket = INVALID_SOCKET;
-                    throw std::runtime_error("listen failed");
+
+                    std::cout << "client " << myRemoteAddress << " accepted\n";
+
+                    // post accept handler
+                    post(myacceptHandler);
                 }
-
-                std::cout << "listening for client on port " << myacceptPort << "\n";
-
-                struct sockaddr_in client_info;
-                int size = sizeof(client_info);
-                SOCKET s = ::accept(
-                    myAcceptSocket,
-                    (sockaddr *)&client_info,
-                    &size);
-                if (s == INVALID_SOCKET)
+                void tcp_read_block()
                 {
-                    std::cout << "invalid socket\n";
-                    return;
-                }
+                    // clear old message
+                    ZeroMemory(myTCPbuf, 1024);
 
-                myConnectSocket = s;
-                myRemoteAddress = inet_ntoa(client_info.sin_addr);
-
-                closesocket(myAcceptSocket);
-
-                std::cout << "client " << myRemoteAddress << " accepted\n";
-
-                // post accept handler
-                post(myacceptHandler);
-            }
-            void tcp_read_block()
-            {
-                // clear old message
-                ZeroMemory(myTCPbuf, 1024);
-
-                // wait to receive message
-                int r = ::recv(
-                    myConnectSocket,
-                    (char *)myTCPbuf, 1024, 0);
-
-                // check for message received
-                // if no message or error, assume connection closed
-                if (r <= 0)
-                {
-                    std::cout << "connection closed\n";
-                    closesocket(myConnectSocket);
-                    myConnectSocket = INVALID_SOCKET;
-                }
-
-                // post read complete message
-                post(myTCPreadHandler);
-            }
-            void tcp_connect_block()
-            {
-                initWinSock();
-
-                struct addrinfo *result = NULL,
-                                hints;
-
-                ZeroMemory(&hints, sizeof(hints));
-                hints.ai_family = AF_UNSPEC;
-                hints.ai_socktype = SOCK_STREAM;
-                hints.ai_protocol = IPPROTO_TCP;
-
-                if (getaddrinfo(
-                        myServerIP.c_str(),
-                        myServerPort.c_str(),
-                        &hints, &result))
-                {
-                    throw std::runtime_error("getaddrinfo failed");
-                }
-
-                myConnectSocket = ::socket(
-                    result->ai_family,
-                    result->ai_socktype,
-                    result->ai_protocol);
-                if (myConnectSocket == INVALID_SOCKET)
-                {
-                    throw std::runtime_error("socket failed");
-                }
-
-                std::cout << "try connect to " << myServerIP << ":" << myServerPort << "\n";
-                if (::connect(
+                    // wait to receive message
+                    int r = ::recv(
                         myConnectSocket,
-                        result->ai_addr,
-                        (int)result->ai_addrlen) == SOCKET_ERROR)
-                {
-                    closesocket(myConnectSocket);
-                    myConnectSocket = INVALID_SOCKET;
-                    throw std::runtime_error("connect failed " + std::to_string(WSAGetLastError()));
+                        (char *)myTCPbuf, 1024, 0);
+
+                    // check for message received
+                    // if no message or error, assume connection closed
+                    if (r <= 0)
+                    {
+                        std::cout << "connection closed\n";
+                        closesocket(myConnectSocket);
+                        myConnectSocket = INVALID_SOCKET;
+                    }
+
+                    // post read complete message
+                    post(myTCPreadHandler);
                 }
-                else
+                void tcp_connect_block()
                 {
-                    post(myTCPconnectHandler);
+                    initWinSock();
+
+                    struct addrinfo *result = NULL,
+                                    hints;
+
+                    ZeroMemory(&hints, sizeof(hints));
+                    hints.ai_family = AF_UNSPEC;
+                    hints.ai_socktype = SOCK_STREAM;
+                    hints.ai_protocol = IPPROTO_TCP;
+
+                    if (getaddrinfo(
+                            myServerIP.c_str(),
+                            myServerPort.c_str(),
+                            &hints, &result))
+                    {
+                        throw std::runtime_error("getaddrinfo failed");
+                    }
+
+                    myConnectSocket = ::socket(
+                        result->ai_family,
+                        result->ai_socktype,
+                        result->ai_protocol);
+                    if (myConnectSocket == INVALID_SOCKET)
+                    {
+                        throw std::runtime_error("socket failed");
+                    }
+
+                    std::cout << "try connect to " << myServerIP << ":" << myServerPort << "\n";
+                    if (::connect(
+                            myConnectSocket,
+                            result->ai_addr,
+                            (int)result->ai_addrlen) == SOCKET_ERROR)
+                    {
+                        closesocket(myConnectSocket);
+                        myConnectSocket = INVALID_SOCKET;
+                        throw std::runtime_error("connect failed " + std::to_string(WSAGetLastError()));
+                    }
+                    else
+                    {
+                        post(myTCPconnectHandler);
+                    }
                 }
-            }
-        };
+                void timer_block(int msecs, handler_t f)
+                {
+                    //std::cout << "start " << msecs << std::endl;
 
-        /**  @brief A base timer to invoke a function at some later date
+                    // sleep for required delay
+                    std::this_thread::sleep_for(
+                        std::chrono::milliseconds(msecs));
 
-    This is an abstract base class.  To use it must be specialized
-    and the function handle_timer_event must be over-ridden
-
-    e.g.
-
-<pre>
-
-class cTimedFunction : public raven::event::cTimer
-{
-public:
-    void handle_timer_event()
-    {
-        // do something useful
+                    // post the event handler
+                    post(f);
+                }
+            };
+        }
     }
-};
-
-cTimedFunction tf;
-tf.WaitThenPost( 1000 );    // do something useful 1 second from now
-
-</pre>
-*/
-
-        // class cTimer
-        //     {
-        //     public:
-        //         /** Non-blocking delayed run of handle_timer_event()
-
-        // @param[in] msec  how long to wait before running handler
-
-        // This returns immediatly.  After the delay is completed
-        // ( the delay uses a sleeping thread, so consumes almost no CPU )
-        // the function will be posted to the event queue where it will be run
-        // as soon as possible after any other posted event handlers
-
-        // */
-        //         void WaitThenPost(int msecs)
-        //         {
-        //             WaitThenPost(
-        //                 msecs,
-        //                 handler_t(std::bind(&cTimer::handle_timer_event, this)));
-        //         }
-
-        //         /** Over-ride this with the code you want to execute
-        // when the timer expires.
-
-        // Even if you are not going to use this, it must be overridden,
-        // like this
-
-        // void handle_timer_event() {}
-
-        // */
-
-        //         virtual void handle_timer_event() = 0;
-
-        //         /** Non-blocking delayed run of a supplied function
-
-        // @param[in] msec  how long to wait before running handler
-        // @param[in] f supplied event handler
-
-        // The supplied function must return void, but can use parameters
-
-        // e.g.
-
-        // <pre>
-        //     WaitThenPost(
-        //         msecs,
-        //         cEventQueue::handler_t( std::bind(&myTimer::myFunction, this, param1, param2 ) ) );
-        // </pre>
-
-        // */
-
-        //         void WaitThenPost(int msecs, handler_t f)
-        //         {
-        //             // run blocking wait and post in a sleeping thread
-
-        //             /*
-
-        //     Note that we store the future that is returned in an attribute
-        //     even though we do not use it for antything
-
-        //     The thread will not start if the return is 'disregarded'
-        //     i.e. if the return is destroyed.  We must keep it in scope
-        //     to keep the thread running
-
-        //     */
-        //             myfuture = std::async(
-        //                 std::launch::async,         // insist on starting immediatly
-        //                 &cTimer::BlockWaitThenPost, // run the blocking wait and post
-        //                 this,                       // for this instance
-        //                 msecs,                      // length to delay
-        //                 f);                         // function to post when the delay completes
-        //         }
-
-        //     private:
-        //         /**  Blocking wait and post */
-        //         void BlockWaitThenPost(int msec, handler_t f)
-        //         {
-        //             // sleep for reuired delay
-        //             std::this_thread::sleep_for(
-        //                 std::chrono::milliseconds(msec));
-
-        //             // post the event handler to the event queue
-        //             // ( It will run in the main thread,
-        //             //  not this one which now dies )
-
-        //             theEventQueue.Post(f);
-        //         }
-
-        //         std::future<void> myfuture; ///< this keeps the running sleeping thread in scope
-        //     };
-
-        //     /** Stop the event handler after a delay */
-
-        //     class cTimedStop : public cTimer
-        //     {
-        //     public:
-        //         /** ctor
-
-        // @param[in] secs to wait, then stop the event handler
-
-        // Construct this before the call the theEventQueue.Run()
-        // to limit the run to the specified period.
-
-        // */
-
-        //         cTimedStop(int secs)
-        //         {
-        //             WaitThenPost(1000 * secs);
-        //         }
-
-        //         /**  event handler to stop them all */
-
-        //         void handle_timer_event()
-        //         {
-        //             theEventQueue.Stop();
-        //         }
-        //     };
-
-    }
-}

@@ -4,9 +4,14 @@ VPATH = ../../src
 # folder for .o files
 ODIR=./obj
 
+OPT=-O2
+
 # sources
 _CIN = cintest.o 
 CIN = $(patsubst %,$(ODIR)/%,$(_CIN))
+
+_TIMER = timertest.o
+TIMER = $(patsubst %,$(ODIR)/%,$(_TIMER))
 
 _SERVER = tcpserver.o
 SERVER = $(patsubst %,$(ODIR)/%,$(_SERVER))
@@ -15,12 +20,16 @@ _CLIENT = tcpclient.o
 CLIENT = $(patsubst %,$(ODIR)/%,$(_CLIENT))
 
 $(ODIR)/%.o: %.cpp 
-	g++ -g  -std=c++17 -I../../include \
+	g++ $(OPT)  -std=c++17 -I../../include \
 	-c -o $@ $<
 
 cin: $(CIN)
 	g++ -g \
 	-o ../../bin/cintest.exe $^
+
+timer: $(TIMER) 
+	g++ $(OPT) \
+	-o ../../bin/timertest.exe $^
 
 server: $(SERVER)
 	g++ -g  \
