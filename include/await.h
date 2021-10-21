@@ -87,6 +87,8 @@ namespace raven
              * Event handler runs both for a message reacived
              * and for the connected closed or errored.
              * The handler should check status with isTCPConnected()
+             * 
+             * Event handler can get the message received with TCPmsg()
              */
             void TCPread(handler_t f)
             {
@@ -133,6 +135,9 @@ namespace raven
             *    This will never return
             *    It will keep running ( even if there is no work )
             *    until Stop() is called from one of the event handlers
+            * 
+            *    All the event handlers will run in sequence in the
+            *    thread that calls this.
             *
             */
             void run()
@@ -174,12 +179,10 @@ namespace raven
                 }
             }
 
-                /**  Stop the event handler running
-
-    This should be called from an event handler
-
-    */
-
+            /**  Stop the event handler running
+            *
+            * This should be called from an event handler
+            */
                 void Stop()
                 {
                     myStopFlag = true;
