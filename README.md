@@ -4,6 +4,8 @@ Non blocking ( asynchronous ) event waiter
 
 A C++ class that looks after setting up non-blocking waits for events to occur and the code to run ( event handlers ) when the events occur.
 
+No synchronization is required, all the event handlers run in sequence in the same thread.
+
 No libraries are required, everything is in a single standard C++17 include file `await/include/await.h`
 
 ## Events
