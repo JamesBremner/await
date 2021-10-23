@@ -8,24 +8,17 @@ No synchronization is required, all the event handlers run in sequence in the sa
 
 No libraries are required, everything is in a single standard C++17 include file `await/include/await.h`
 
-## Events
-
- - timer
- - keyboard input
- - tcp connection request from tcp client
- - tcp connection accept from tcp server
- - tcp read from peer
-
 ## general usage
 
- - define event handler funtion
+ - define blocking function with signature `void f()`
+ - define event handler funtion with signature `void f()`
  - construct instance of cAwait
- - pass event handler function using relevent asynchronous cAwait method
+ - pass blocking and event handler functions using cAwait() method
  - start event manager by calling blocking method cAwait::run()
 
 ## Sample code
 
-Code from demo application is in the `src` folder.  They can be built using the makefile in folder `build/vscode`
+Code for demo applications is in the `src` folder.  They can be built using the makefile in folder `build/vscode`
 
  - `timertest.cpp` creates multiple timers that run concurrently
  - `cintest.cpp` demonstrates non-blocking keyboard input
