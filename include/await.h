@@ -17,7 +17,6 @@ namespace raven
         class cAwait
         {
         public:
-
             /** non-blocking wait for a blocking function to run
              * @param[in] blocker blocking function to run
              * @param[in] handler function to run when blocking function completes
@@ -26,6 +25,7 @@ namespace raven
                 std::function<void()> blocker,
                 std::function<void()> handler)
             {
+                // start blocking function in its own thread
                 std::thread t(block, this, blocker, handler);
 
                 // detatch computation thread from thread object
@@ -49,13 +49,8 @@ namespace raven
                 // keep on running
                 while (1)
                 {
-                    // if handler queue is empty,
-                    // wait for notification that handler has been posted
-                    // ( otherwise thus is a busy loop that runs the CPU ragged )
-                    std::mutex cvMutex;
-                    std::unique_lock<std::mutex> lck(cvMutex);
-                    myHandlerWaiting.wait(lck, [this]
-                                          { return (bool)myQ.size(); });
+                    // wait for event handler on the queue
+                    WaitForHandler();
 
                     // return if stop flag set
                     if (myStopFlag)
@@ -115,6 +110,22 @@ namespace raven
 
                 // notify that a handler is waiting
                 myHandlerWaiting.notify_one();
+            }
+
+            /** wait for event handler on the queue
+             * 
+             * returns immediatly if a handler is waiting in the queue
+             * Otherwise returns when notified that a hanler has been added to queue
+             */
+            void WaitForHandler()
+            {
+                // This looks complex
+                // but, unlike a busy loop,
+                // consumes almost no CPU cycles while waiting
+                std::mutex cvMutex;
+                std::unique_lock<std::mutex> lck(cvMutex);
+                myHandlerWaiting.wait(lck, [this]
+                                      { return (bool)myQ.size(); });
             }
 
             /**  get copy of next handler if one waiting
