@@ -4,17 +4,23 @@ Non blocking ( asynchronous ) event waiter
 
 A C++ class that looks after setting up non-blocking waits for events to occur and the code to run ( event handlers ) when the events occur.
 
-No synchronization is required, all the event handlers run in sequence in the same thread.
+No synchronization is usually required, all the event handlers run in sequence in the same thread.
 
 No libraries are required, everything is in a single standard C++17 include file `await/include/await.h`
 
 ## general usage
 
- - define blocking function with signature `void f()`
+ - define blocking wait function with signature `void f()`
  - define event handler funtion with signature `void f()`
  - construct instance of cAwait
  - pass blocking and event handler functions using cAwait() method
  - start event manager by calling blocking method cAwait::run()
+
+## Synchronization
+
+No synchronization is usually required since all the event handlers run in sequence in the same thread.
+
+Each blocking wait function runs in its own thread, so if more than one is waiting they should not access the same data without synchronization.  Usually, data does not need to be shared between blocking wait functions.  ( Let me know if you have a use case that seems to need synchronization )
 
 ## Sample code
 
