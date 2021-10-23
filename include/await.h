@@ -6,6 +6,7 @@
 #include <mutex>
 #include <queue>
 #include <chrono>
+#include <condition_variable>
 
 namespace raven
 {
@@ -42,6 +43,13 @@ namespace raven
                 // keep on running
                 while (1)
                 {
+                    // if handler queue is empty,
+                    // wait for notification that handler has been posted
+                    // ( otherwise thus is a busy loop that runs the CPU ragged )
+                    std::mutex cvMutex;
+                    std::unique_lock<std::mutex> lck(cvMutex);
+                    myHandlerWaiting.wait( lck, [this]{return (bool)myQ.size();});
+
                     // return if stop flag set
                     if (myStopFlag)
                         break;
@@ -57,9 +65,6 @@ namespace raven
                         */
                         myHandlerCopy();
                     }
-
-                    // allow other waiting threads to run
-                    std::this_thread::yield();
                 }
             }
 
@@ -70,6 +75,10 @@ namespace raven
             void stop()
             {
                 myStopFlag = true;
+                std::lock_guard<std::mutex> lock(myMutex);
+                std::function<void()> f;
+                myQ.push( f );
+                myHandlerWaiting.notify_one();
             }
 
         private:
@@ -78,6 +87,7 @@ namespace raven
             handler_t myHandlerCopy;   ///< currently running event handler
             std::queue<handler_t> myQ; ///< the queue of event handlers ready to run
             std::mutex myMutex;        ///< prevents contention between threads trying to access the handler queue
+            std::condition_variable myHandlerWaiting;
 
             /** Post an event handler to be run as soon as possible
 
@@ -90,8 +100,14 @@ namespace raven
             */
             void post(handler_t f)
             {
+                // protect queue from other threads
                 std::lock_guard<std::mutex> lock(myMutex);
+
+                // ass handler to queue
                 myQ.push(f);
+
+                // notify that a handler is waiting
+                myHandlerWaiting.notify_one();
             }
 
             /**  get copy of next handler if one waiting
