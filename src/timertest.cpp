@@ -18,7 +18,7 @@ public:
     }
 };
 
-cTimer timer1sec( 1000 );
+cTimer timer1sec( 100 );
 cTimer timer10sec( 10000 );
 cTimer timer15sec( 15000 );
 
@@ -27,8 +27,8 @@ time_t start, end;
 void handler1()
 {
     static int count = 0;
-    std::cout << ". " << std::endl;
-    if (count++ > 20)
+    std::cout << ". " << std::flush;
+    if (count++ > 2000)
         waiter.stop();
     waiter(timer1sec, handler1);
 }
@@ -36,13 +36,13 @@ void handler2()
 {
     time(&end);
     double dif = difftime(end, start);
-    std::cout << "***********timer10sec after " << dif << std::endl;
+    std::cout << "\n***********timer10sec after " << dif << std::endl;
 }
 void handler3()
 {
     time(&end);
     double dif = difftime(end, start);
-    std::cout << "************timer15sec after " << dif << std::endl;
+    std::cout << "\n************timer15sec after " << dif << std::endl;
 }
 
 

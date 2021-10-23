@@ -17,6 +17,7 @@ namespace raven
         class cAwait
         {
         public:
+
             /** non-blocking wait for a blocking function to run
              * @param[in] blocker blocking function to run
              * @param[in] handler function to run when blocking function completes
@@ -25,7 +26,12 @@ namespace raven
                 std::function<void()> blocker,
                 std::function<void()> handler)
             {
-                new std::thread(block, this, blocker, handler);
+                std::thread t(block, this, blocker, handler);
+
+                // detatch computation thread from thread object
+                // so thread object can be destroyed when it goes out of scope
+                // without terminating the execution
+                t.detach();
             }
 
             /** Run the event handlers in the order they were posted
@@ -48,7 +54,8 @@ namespace raven
                     // ( otherwise thus is a busy loop that runs the CPU ragged )
                     std::mutex cvMutex;
                     std::unique_lock<std::mutex> lck(cvMutex);
-                    myHandlerWaiting.wait( lck, [this]{return (bool)myQ.size();});
+                    myHandlerWaiting.wait(lck, [this]
+                                          { return (bool)myQ.size(); });
 
                     // return if stop flag set
                     if (myStopFlag)
@@ -77,7 +84,7 @@ namespace raven
                 myStopFlag = true;
                 std::lock_guard<std::mutex> lock(myMutex);
                 std::function<void()> f;
-                myQ.push( f );
+                myQ.push(f);
                 myHandlerWaiting.notify_one();
             }
 
