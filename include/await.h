@@ -47,6 +47,7 @@ namespace raven
             void run()
             {
                 // keep on running
+                myStopFlag = false;
                 while (1)
                 {
                     // wait for event handler on the queue
@@ -105,7 +106,7 @@ namespace raven
                 // protect queue from other threads
                 std::lock_guard<std::mutex> lock(myMutex);
 
-                // ass handler to queue
+                // add handler to queue
                 myQ.push(f);
 
                 // notify that a handler is waiting
