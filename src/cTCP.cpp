@@ -2,9 +2,9 @@
 #include <iostream>
 #include "cTCP.h"
 
-    cTCP::cTCP() : myConnectSocket(INVALID_SOCKET)
-    {
-    }
+cTCP::cTCP() : myConnectSocket(INVALID_SOCKET)
+{
+}
 
 void cTCP::initWinSock()
 {
@@ -18,9 +18,9 @@ void cTCP::initWinSock()
 void cTCP::acceptClient()
 {
     if (isConnected())
-        throw std::runtime_error( "second connection rejected");
-    if( myServerPort.empty() )
-        throw std::runtime_error( "Server not configured" );
+        throw std::runtime_error("second connection rejected");
+    if (myServerPort.empty())
+        throw std::runtime_error("Server not configured");
 
     initWinSock();
 
@@ -112,10 +112,21 @@ void cTCP::read()
         myConnectSocket = INVALID_SOCKET;
     }
 }
+void cTCP::serverWait()
+{
+    while (1)
+    {
+        connectToServer();
+        if (isConnected())
+        {
+            return;
+        }
+    }
+}
 void cTCP::connectToServer()
 {
-    if( myServerPort.empty() )
-        throw std::runtime_error( "Server not configured" );
+    if (myServerPort.empty())
+        throw std::runtime_error("Server not configured");
 
     initWinSock();
 
@@ -144,7 +155,6 @@ void cTCP::connectToServer()
         throw std::runtime_error("socket failed");
     }
 
-    std::cout << "try connect to " << myServerIP << ":" << myServerPort << "\n";
     if (::connect(
             myConnectSocket,
             result->ai_addr,
@@ -152,7 +162,6 @@ void cTCP::connectToServer()
     {
         closesocket(myConnectSocket);
         myConnectSocket = INVALID_SOCKET;
-        throw std::runtime_error("connect failed " + std::to_string(WSAGetLastError()));
     }
 }
 void cTCP::send(const std::string &msg)

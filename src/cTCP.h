@@ -15,8 +15,12 @@ public:
         myServerIP = ServerIP;
     }
 
-    /// Connect to server
-    void connectToServer();
+    /** Connect to server
+     * 
+     * Throws exeption if there is a configuration problem
+     * Otherwise blocks until connection
+     */
+    void serverWait();
 
     /// Wait for client connection request
     void acceptClient();
@@ -48,4 +52,13 @@ private:
     char myReadbuf[1024];
 
     void initWinSock();
+
+    /** Connect to server
+     * 
+     * Throws exception on configuration error
+     * 
+     * Returns on success or failure of connection
+     * Use isConnected() to determine success or failure
+     */
+    void connectToServer();
 };
