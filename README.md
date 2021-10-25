@@ -11,10 +11,15 @@ No libraries are required, everything is in a single standard C++17 include file
 ## general usage
 
  - define blocking wait function with signature `void f()`
- - define event handler funtion with signature `void f()`
+ - define event handler function with signature `void f()`
  - construct instance of cAwait
- - pass blocking and event handler functions using cAwait() method
+ - register blocking wait function and associated event handler functions using cAwait() method
  - start event manager by calling blocking method cAwait::run()
+
+Alternatives to registering functions with signature `void f()`
+
+ - Use a functor.  That is a class with a method `void operator()()`
+ - Use a lambda.  This looks like `[]{ ...code... }`
 
 ## Synchronization
 
