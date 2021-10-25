@@ -6,23 +6,6 @@ raven::await::cAwait waiter;
 
 cTCP theTCP;
 
-void readHandler();
-
-void acceptFunctor()
-{
-    theTCP.acceptClient();
-}
-void readFunctor()
-{
-    theTCP.read();
-}
-
-void acceptHandler()
-{
-    std::cout << "client connected\n";
-    waiter(readFunctor, readHandler);
-}
-
 void readHandler()
 {
     if (!theTCP.isConnected())
@@ -31,15 +14,27 @@ void readHandler()
 
         // wait for a new connection request
         waiter(
-            acceptFunctor,
-            acceptHandler);
+            []
+            { theTCP.acceptClient(); },
+            []
+            {
+                std::cout << "client connected\n";
+                waiter(
+                    []
+                    { theTCP.read(); },
+                    readHandler);
+            });
         return;
     }
 
-    std::cout << "Msg read: " << theTCP.readMsg() << "\n";
+    // display message received
+    std::cout << "Msg read: " 
+        << theTCP.readMsg() << "\n";
 
+    // wait for another message
     waiter(
-        readFunctor,
+        []
+        { theTCP.read(); },
         readHandler);
 }
 
@@ -56,8 +51,16 @@ int main(int argc, char *argv[])
         argv[1]);
 
     waiter(
-        acceptFunctor,
-        acceptHandler);
+        []
+        { theTCP.acceptClient(); },
+        []
+        {
+            std::cout << "client connected\n";
+            waiter(
+                []
+                { theTCP.read(); },
+                readHandler);
+        });
 
     waiter.run();
 }
