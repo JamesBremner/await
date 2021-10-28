@@ -4,7 +4,7 @@
 
 raven::await::cAwait waiter;
 
-cTCP theTCP;
+raven::set::cTCP theTCP;
 
 void readHandler()
 {

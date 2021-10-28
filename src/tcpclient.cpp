@@ -20,7 +20,7 @@ public:
     }
 };
 
-cTCP theTCP;
+raven::set::cTCP theTCP;
 bool serverConnectionSuccess;
 
 void inputHandler()

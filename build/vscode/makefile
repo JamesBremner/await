@@ -1,5 +1,8 @@
-#source file search paths
-VPATH = ../../src 
+# source file search paths
+VPATH = ../../src  ../../../raven-set
+
+# include folders
+INC = -I../../include -I../../../raven-set
 
 # folder for .o files
 ODIR=./obj
@@ -20,7 +23,7 @@ _CLIENT = tcpclient.o cTCP.o
 CLIENT = $(patsubst %,$(ODIR)/%,$(_CLIENT))
 
 $(ODIR)/%.o: %.cpp 
-	g++ $(OPT)  -std=c++17 -I../../include \
+	g++ $(OPT)  -std=c++17 $(INC) \
 	-c -o $@ $<
 
 cin: $(CIN)
