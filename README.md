@@ -55,6 +55,10 @@ Each blocking wait function runs in its own thread, so if more than one is waiti
 
 All the event handlers run in sequence in the same thread, so there are no synchronization worries.
 
+## Long duration event handlers
+
+If some of the event handlers block for a long duration, compared to others, then by default they will block the fast event handlers running.  This may or may not be what is wanted.  If it is required that the fast handlers run immediatly, no matter if long duration handlers are already running, then the long duration handlers must be spawned in their own threads.  Now you will need to worry about synchronization and the possible impact on overall performance of context switching/
+
 ## Sample code
 
 Code for demo applications is in the `src` folder.  They can be built using the makefile in folder `build/vscode`
