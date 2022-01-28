@@ -22,6 +22,9 @@ SERVER = $(patsubst %,$(ODIR)/%,$(_SERVER))
 _CLIENT = tcpclient.o cTCP.o
 CLIENT = $(patsubst %,$(ODIR)/%,$(_CLIENT))
 
+_EVENT = eventserver.o
+EVENT = $(patsubst %,$(ODIR)/%,$(_EVENT))
+
 $(ODIR)/%.o: %.cpp 
 	g++ $(OPT)  -std=c++17 $(INC) \
 	-c -o $@ $<
@@ -41,6 +44,10 @@ server: $(SERVER)
 client: $(CLIENT)
 	g++ -g  \
 	-o ../../bin/tcpclient.exe $^ -lws2_32 -lwsock32
+
+events: $(EVENT)
+	g++ $(OPT) \
+	-o ../../bin/events.exe $^
 
 .PHONY: clean
 clean:

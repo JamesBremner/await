@@ -80,6 +80,25 @@
             } 
         },
         {
+            "label": "eventserver",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "command": "mingw32-make.exe",
+            "args": [
+                "-f",
+                "makefile",
+                "events"
+            ],
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            } 
+        },
+        {
             "label": "clean",
             "command": "mingw32-make.exe",
             "args": [
