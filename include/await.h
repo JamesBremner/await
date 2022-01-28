@@ -17,7 +17,7 @@ namespace raven
         class cAwait
         {
         public:
-            /** non-blocking wait for a blocking function to run
+            /** non-blocking wait for a blocking function to run, then run function in execution thread
              * @param[in] blocker blocking function to run
              * @param[in] handler function to run when blocking function completes
              */
@@ -32,6 +32,23 @@ namespace raven
                 // so thread object can be destroyed when it goes out of scope
                 // without terminating the execution
                 t.detach();
+            }
+
+            /** non-blocking wait for a time, then run function in execution thread
+             * @param[in] msecs to wait before running hanler
+             * @param[in] handler function to run after wait
+             */
+            void operator()(
+                int msecs,
+                std::function<void()> handler)
+            {
+                (*this)(
+                    [this, msecs]
+                    {
+                        std::this_thread::sleep_for(
+                            std::chrono::milliseconds(msecs));
+                    },
+                    handler );
             }
 
             /** Run the event handlers in the order they were posted
