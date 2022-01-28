@@ -21,6 +21,17 @@ Alternatives to registering functions with signature `void f()`
  - Use a functor.  That is a class with a method `void operator()()`
  - Use a lambda.  This looks like `[]{ ...code... }`
 
+## Timed wait
+A frequent use case is to run a handler function after a specified wait time.  For this, the cAwait provides a convenience method
+
+            /** non-blocking wait for a time, then run function in execution thread
+             * @param[in] msecs to wait before running hanler
+             * @param[in] handler function to run after wait
+             */
+            void operator()(
+                int msecs,
+                std::function<void()> handler)
+
 ## Synchronization
 
 No synchronization is usually required. 
