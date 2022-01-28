@@ -1,7 +1,20 @@
 #include "await.h"
-#include "cCIN.h"
 
 raven::await::cAwait waiter;
+
+class cCIN
+{
+public:
+static std::string myString;
+void operator()()
+{
+    std::cout << "type something: "; 
+    std::cin >> myString;
+}
+};
+
+std::string cCIN::myString;
+cCIN theCIN;
 
 // handle some keyboard input
 void cinHandler()
