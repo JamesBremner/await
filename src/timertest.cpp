@@ -5,23 +5,6 @@
 
 raven::await::cAwait waiter;
 
-class cTimer
-{
-public:
-    int myDelaymsecs;
-    cTimer( int msecs ) : myDelaymsecs( msecs )
-    {}
-    void operator()()
-    {
-        std::this_thread::sleep_for(
-            std::chrono::milliseconds(myDelaymsecs));
-    }
-};
-
-cTimer timer1sec( 100 );
-cTimer timer10sec( 10000 );
-cTimer timer15sec( 15000 );
-
 time_t start, end;
 
 void handler1()
@@ -30,7 +13,7 @@ void handler1()
     std::cout << ". " << std::flush;
     if (count++ > 2000)
         waiter.stop();
-    waiter(timer1sec, handler1);
+    waiter(1000, handler1);
 }
 void handler2()
 {
@@ -43,6 +26,7 @@ void handler3()
     time(&end);
     double dif = difftime(end, start);
     std::cout << "\n************timer15sec after " << dif << std::endl;
+    waiter.stop();
 }
 
 
@@ -50,8 +34,8 @@ int main()
 {
     time(&start);
     
-    waiter(timer1sec, handler1);
-    waiter(timer10sec, handler2);
-    waiter(timer15sec, handler3);
+    waiter(1000, handler1);
+    waiter(10000, handler2);
+    waiter(15000, handler3);
     waiter.run();
 }
