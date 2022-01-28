@@ -31,6 +31,21 @@ A frequent use case is to run a handler function after a specified wait time.  F
             void operator()(
                 int msecs,
                 std::function<void()> handler)
+                
+This can be used to schedule a periodic regular event, like this
+
+```
+void myClass::repeater()
+{
+   // ... do something ...
+   
+   // schedule a repeat in 1 second
+   await(
+       1000,
+       [this]
+       { repeater(); });
+}
+```
 
 ## Synchronization
 
