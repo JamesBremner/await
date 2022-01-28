@@ -23,9 +23,11 @@ Alternatives to registering functions with signature `void f()`
 
 ## Synchronization
 
-No synchronization is usually required since all the event handlers run in sequence in the same thread.
+No synchronization is usually required. 
 
 Each blocking wait function runs in its own thread, so if more than one is waiting they should not access the same data without synchronization.  Usually, data does not need to be shared between blocking wait functions.  ( Let me know if you have a use case that seems to need synchronization )
+
+All the event handlers run in sequence in the same thread, so there are no synchronization worries.
 
 ## Sample code
 
