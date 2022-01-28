@@ -35,3 +35,4 @@ Code for demo applications is in the `src` folder.  They can be built using the 
  - `cintest.cpp` demonstrates non-blocking keyboard input
  - `tcpserver.cpp` a simple TCP server that displays message received from a client
  - `tcpclient.cpp` a simple TCP client that sends message to a server as they are typed
+ - `eventServer.cpp` handle events with delays and durations. Details: https://github.com/JamesBremner/await/wiki/Event-Server
