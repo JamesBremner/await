@@ -1,24 +1,23 @@
 #include <iostream>
 #include <chrono>
 #include "await.h"
-#include "cCIN.h"
 #include "cTCP.h"
 
 raven::await::cAwait waiter;
 
-class cTimer
+class cCIN
 {
 public:
-    int myDelaymsecs;
-    cTimer(int msecs) : myDelaymsecs(msecs)
-    {
-    }
-    void operator()()
-    {
-        std::this_thread::sleep_for(
-            std::chrono::milliseconds(myDelaymsecs));
-    }
+static std::string myString;
+void operator()()
+{
+    std::cout << "type something: "; 
+    std::cin >> myString;
+}
 };
+
+std::string cCIN::myString;
+cCIN theCIN;
 
 raven::set::cTCP theTCP;
 bool serverConnectionSuccess;
@@ -90,9 +89,8 @@ int main(int argc, char *argv[])
         });
 
     // abandon server wait if no connection after 20 secs
-    cTimer timer20sec(20000);
     waiter(
-        timer20sec,
+        20000,
         []
         {
             if (serverConnectionSuccess)
