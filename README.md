@@ -21,11 +21,43 @@ Alternatives to registering functions with signature `void f()`
  - Use a functor.  That is a class with a method `void operator()()`
  - Use a lambda.  This looks like `[]{ ...code... }`
 
+## Timed wait
+A frequent use case is to run a handler function after a specified wait time.  For this, the cAwait provides a convenience method
+
+            /** non-blocking wait for a time, then run function in execution thread
+             * @param[in] msecs to wait before running hanler
+             * @param[in] handler function to run after wait
+             */
+            void operator()(
+                int msecs,
+                std::function<void()> handler)
+                
+This can be used to schedule a periodic regular event, like this
+
+```
+void myClass::repeater()
+{
+   // ... do something ...
+   
+   // schedule a repeat in 1 second
+   await(
+       1000,
+       [this]
+       { repeater(); });
+}
+```
+
 ## Synchronization
 
-No synchronization is usually required since all the event handlers run in sequence in the same thread.
+No synchronization is usually required. 
 
 Each blocking wait function runs in its own thread, so if more than one is waiting they should not access the same data without synchronization.  Usually, data does not need to be shared between blocking wait functions.  ( Let me know if you have a use case that seems to need synchronization )
+
+All the event handlers run in sequence in the same thread, so there are no synchronization worries.
+
+## Long duration event handlers
+
+If some of the event handlers block for a long duration, compared to others, then by default they will block the fast event handlers running.  This may or may not be what is wanted.  If it is required that the fast handlers run immediatly, no matter if long duration handlers are already running, then the long duration handlers must be spawned in their own threads.  Now you will need to worry about synchronization and the possible impact on overall performance of context switching/
 
 ## Sample code
 
@@ -35,3 +67,4 @@ Code for demo applications is in the `src` folder.  They can be built using the 
  - `cintest.cpp` demonstrates non-blocking keyboard input
  - `tcpserver.cpp` a simple TCP server that displays message received from a client
  - `tcpclient.cpp` a simple TCP client that sends message to a server as they are typed
+ - `eventServer.cpp` handle events with delays and durations. Details: https://github.com/JamesBremner/await/wiki/Event-Server
