@@ -2,38 +2,33 @@
 
 raven::await::cAwait waiter;
 
-class cCIN
-{
-public:
-static std::string myString;
-void operator()()
+std::string myString;
+
+/// Blocking wait for input from keyboard
+void input()
 {
     std::cout << "type something: "; 
-    std::cin >> myString;
+    std::cin >> myString;    
 }
-};
-
-std::string cCIN::myString;
-cCIN theCIN;
 
 // handle some keyboard input
 void cinHandler()
 {
     // check for stop request
-    if( theCIN.myString == "stop") {
+    if( myString == "stop") {
         waiter.stop();
         return;
     }
 
     // display input
-    std::cout << "input: "<< theCIN.myString << std::endl;
+    std::cout << "input: "<< myString << std::endl;
 
     // wait for more input
-    waiter( theCIN, cinHandler );
+    waiter( input, cinHandler );
 }
 
 int main()
 {
-    waiter( theCIN, cinHandler );
+    waiter( input, cinHandler );
     waiter.run();
 }
